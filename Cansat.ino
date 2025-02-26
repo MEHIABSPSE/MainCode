@@ -11,13 +11,17 @@ Autor Dominik Hybler
 #include <Adafruit_BMP280.h>
 //knihovna pro gps
 #include <TinyGPS.h>
+//knihovna pro spektroskop
+#include <Adafruit_AS7341.h>
 SoftwareSerial swSerial(5, 6);    //RX, TX gps
 SoftwareSerial mySerial(10, 11);  // RX, TX komunikace
 TinyGPS gps;
 #define BMP280_ADRESA (0x76)  //adresa pro bmp280
 Adafruit_BMP280 bmp;
+Adafruit_AS7341 as7341;
 int korekce = 32;
 void setup() {
+  pinMode(4, OUTPUT);
   swSerial.begin(9600);
   Serial.begin(9600);
   mySerial.begin(9600);
@@ -28,15 +32,49 @@ void setup() {
     while (1)
       ;
   }
+  while (!Serial) {
+    delay(1);
+  }
+
+  if (!as7341.begin()) {
+    Serial.println("Could not find AS7341");
+    while (1) { delay(10); }
+  }
+
+  as7341.setATIME(100);
+  as7341.setASTEP(999);
+  as7341.setGain(AS7341_GAIN_256X);
 }
 
 void loop() {  // run over and over
   //proměnné na odesílání
+    uint16_t readings[8];
   float teplota = bmp.readTemperature();
   float tlak = (bmp.readPressure() / 100.00) + korekce;
   bool novaData = false;
   unsigned long znaky;
   unsigned short slova, chyby;
+  //spektroskop kód
+   if (!as7341.readAllChannels(readings)) {
+    Serial.println("Error reading all channels!");
+    return;
+  }
+  Serial.print("ADC0/F1 415nm : ");
+  Serial.println(readings[0]);
+  Serial.print("ADC1/F2 445nm : ");
+  Serial.println(readings[1]);
+  Serial.print("ADC2/F3 480nm : ");
+  Serial.println(readings[2]);
+  Serial.print("ADC3/F4 515nm : ");
+  Serial.println(readings[3]);
+  Serial.print("ADC0/F5 555nm : ");
+  Serial.println(readings[6]);
+  Serial.print("ADC1/F6 590nm : ");
+  Serial.println(readings[7]);
+  Serial.print("ADC2/F7 630nm : ");
+  Serial.println(readings[8]);
+  Serial.print("ADC3/F8 680nm : ");
+  Serial.println(readings[9]);
   //gps kód
   for (unsigned long start = millis(); millis() - start < 1000;) {
     while (swSerial.available()) {
@@ -46,7 +84,7 @@ void loop() {  // run over and over
       }
     }
   }
-if (novaData) {
+  if (novaData) {
     float zSirka, zDelka;
     unsigned long stariDat;
     int rok;
@@ -72,8 +110,6 @@ if (novaData) {
     Serial.print(stariDat == TinyGPS::GPS_INVALID_AGE ? 0 : stariDat);
     Serial.print(" Nadmorska vyska: ");
     Serial.print(gps.f_altitude() == TinyGPS::GPS_INVALID_F_ALTITUDE ? 0 : gps.f_altitude());
-    Serial.print(" Rychlost v km/h: ");
-    Serial.println(gps.f_speed_kmph() == TinyGPS::GPS_INVALID_F_SPEED ? 0 : gps.f_speed_kmph());
     // načtení data a času z GPS modulu do proměnných
     gps.crack_datetime(&rok, &mesic, &den, &hodina, &minuta, &sekunda, &setinaSekundy, &stariDat);
     // kontrola platnosti dat
@@ -101,9 +137,33 @@ if (novaData) {
   if (znaky == 0) {
     Serial.println("Chyba pri prijmu dat z GPS, zkontrolujte zapojeni!");
   }
+  if (gps.altitude()<5) {
+  digitalWrite(4, 1);
+  }
+
   Serial.println();
   //odesílání přes tx a rx
+  float zSirka, zDelka;
+  mySerial.print(zSirka == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : zSirka, 6);
+mySerial.print(zDelka == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : zDelka, 6);
+   mySerial.print(gps.f_altitude() == TinyGPS::GPS_INVALID_F_ALTITUDE ? 0 : gps.f_altitude());
   mySerial.println(teplota);
   mySerial.println(tlak);
+  mySerial.print("ADC0/F1 415nm : ");
+  mySerial.println(readings[0]);
+  mySerial.print("ADC1/F2 445nm : ");
+  mySerial.println(readings[1]);
+  mySerial.print("ADC2/F3 480nm : ");
+  mySerial.println(readings[2]);
+  mySerial.print("ADC3/F4 515nm : ");
+  mySerial.println(readings[3]);
+  mySerial.print("ADC0/F5 555nm : ");
+  mySerial.println(readings[6]);
+  mySerial.print("ADC1/F6 590nm : ");
+  mySerial.println(readings[7]);
+  mySerial.print("ADC2/F7 630nm : ");
+  mySerial.println(readings[8]);
+  mySerial.print("ADC3/F8 680nm : ");
+  mySerial.println(readings[9]);
   delay(1000);
 }
