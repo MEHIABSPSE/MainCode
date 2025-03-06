@@ -1,6 +1,6 @@
 
 /*
-kód psaný 23.2.2025
+kód psaný 27.2.2025
 Autor Dominik Hybler
 */
 #include <SoftwareSerial.h>
@@ -12,13 +12,13 @@ Autor Dominik Hybler
 //knihovna pro gps
 #include <TinyGPS.h>
 //knihovna pro spektroskop
-#include <Adafruit_AS7341.h>
+//#include <Adafruit_AS7341.h>
 SoftwareSerial swSerial(5, 6);    //RX, TX gps
 SoftwareSerial mySerial(10, 11);  // RX, TX komunikace
 TinyGPS gps;
 #define BMP280_ADRESA (0x76)  //adresa pro bmp280
 Adafruit_BMP280 bmp;
-Adafruit_AS7341 as7341;
+//Adafruit_AS7341 as7341;
 int korekce = 32;
 void setup() {
   pinMode(4, OUTPUT);
@@ -35,15 +35,17 @@ void setup() {
   while (!Serial) {
     delay(1);
   }
-
+/*
   if (!as7341.begin()) {
     Serial.println("Could not find AS7341");
     while (1) { delay(10); }
   }
+  
 
   as7341.setATIME(100);
   as7341.setASTEP(999);
   as7341.setGain(AS7341_GAIN_256X);
+  */
 }
 
 void loop() {  // run over and over
@@ -55,6 +57,7 @@ void loop() {  // run over and over
   unsigned long znaky;
   unsigned short slova, chyby;
   //spektroskop kód
+  /*
    if (!as7341.readAllChannels(readings)) {
     Serial.println("Error reading all channels!");
     return;
@@ -75,6 +78,7 @@ void loop() {  // run over and over
   Serial.println(readings[8]);
   Serial.print("ADC3/F8 680nm : ");
   Serial.println(readings[9]);
+  */
   //gps kód
   for (unsigned long start = millis(); millis() - start < 1000;) {
     while (swSerial.available()) {
@@ -149,6 +153,7 @@ mySerial.print(zDelka == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : zDelka, 6);
    mySerial.print(gps.f_altitude() == TinyGPS::GPS_INVALID_F_ALTITUDE ? 0 : gps.f_altitude());
   mySerial.println(teplota);
   mySerial.println(tlak);
+  /*
   mySerial.print("ADC0/F1 415nm : ");
   mySerial.println(readings[0]);
   mySerial.print("ADC1/F2 445nm : ");
@@ -165,5 +170,6 @@ mySerial.print(zDelka == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : zDelka, 6);
   mySerial.println(readings[8]);
   mySerial.print("ADC3/F8 680nm : ");
   mySerial.println(readings[9]);
+  */
   delay(1000);
 }
